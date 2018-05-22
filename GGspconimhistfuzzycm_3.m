@@ -1,5 +1,5 @@
 % function [U,P,Dist,Cluster_Res,Obj_Fcn,iter]=GGspconimhistfuzzycm(f,Data,C,plotflag,M,epsm)
-function [U,P,Dist,Obj_Fcn,iter]=GGspconimhistfuzzycm(f,Data,C,plotflag,M,epsm)
+function [U,P,Dist,Obj_Fcn,iter]=GGspconimhistfuzzycm_3(f,Data,C,plotflag,M,epsm)
 % 模糊 C 均值聚类 FCM: 从随机初始化划分矩阵开始迭代
 % [U,P,Dist,Cluster_Res,Obj_Fcn,iter] = fuzzycm(Data,C,plotflag,M,epsm)
 % 输入:
@@ -39,7 +39,7 @@ start=min(fdoub(:));
 finish=max(fdoub(:));
 fdoub1=fdoub;
 fdoub2=fdoub;
-% fdoub3=fdoub;%//
+fdoub3=fdoub;%//
 
 HData=imhist(uint8(Data));
 NN=size(HData,1);
@@ -57,22 +57,25 @@ U0 = rand(C,NN);
 KK=0:255;
 KKN=KK(ones(C,1),:);
 
-P = [0.3;0.7];
+P = [0.3;0.5;0.7];
 
 while true
     
      %初始目标中心
-    row = 97;
-    col = 141;
-    diagonal_len = 50;
+    row = 111;
+    col = 99;
+    diagonal_len = 59;
     Z1 = zeros(size(f));
     Z2 = zeros(size(f));
+    Z3 = zeros(size(f));
     Z1_1 = zeros(1,256);
     Z2_1 = zeros(1,256);
+    Z3_1 = zeros(1,256);
     for i = 1:f_m
         for j = 1:f_n
             Z1(i,j) = diagonal_len./sqrt((i - row).^2 + (j - col).^2);
             Z2(i,j) = (diagonal_len./sqrt((i - row).^2 + (j - col).^2)).^(0.5);
+            Z3(i,j) = (diagonal_len./sqrt((i - row).^2 + (j - col).^2)).^(1./3);
         end
     end
     for i=0:255
@@ -80,21 +83,23 @@ while true
         if(isempty(Idxx))
              Z1_1(i+1)=0;
              Z2_1(i+1)=0;
-             %sumG3(i+1)=0;%//
+             Z3_1(i+1)=0;
         else
              Z1_1(i+1)=sum(Z1(Idxx));
              Z2_1(i+1)=sum(Z2(Idxx));
-             %sumG3(i+1)=sum(G3_sp(Idxx));%//
+             Z3_1(i+1)=sum(Z3(Idxx));
         end
     end
     
     Z(1,:) = Z1_1(:);
     Z(2,:) = Z2_1(:);
+    Z(3,:) = Z3_1(:);
     
     Z(find(isnan(Z)==1)) = 1;
     Z(Z==inf)=1;
     Z(1,:) = Z(1,:)./max(Z);
     Z(2,:) = Z(2,:)./max(Z);
+    Z(3,:) = Z(3,:)./max(Z);
     
     
     % 迭代计数器
@@ -112,28 +117,28 @@ while true
         end
     end
   
-    Uqufa=(ones(2,256)- Um).^2; %//
+    Uqufa=(ones(3,256)- Um).^2; %//
     U1=Uqufa(1,:);
     U2=Uqufa(2,:);
-    %U3=Uqufa(3,:);%//
+    U3=Uqufa(3,:);%//
     
     for i=start:finish
     Idx=find(fdoub==i);
     fdoub1(Idx)=U1(i+1);
     fdoub2(Idx)=U2(i+1);
-    %fdoub3(Idx)=U3(i+1);%//
+    fdoub3(Idx)=U3(i+1);%//
     end
     
     diff_cen1=(fdoub-P(1,:)).^2;
     diff_cen2=(fdoub-P(2,:)).^2;
-    %diff_cen3=(fdoub-P(3,:)).^2;%//
+    diff_cen3=(fdoub-P(3,:)).^2;%//
      G1=fdoub1.*diff_cen1;
      G2=fdoub2.*diff_cen2; 
-     %G3=fdoub3.*diff_cen3;%//
+     G3=fdoub3.*diff_cen3;%//
      
     G1_sp=imfilter(G1,w);
     G2_sp=imfilter(G2,w);
-    %G3_sp=imfilter(G3,w);%//
+    G3_sp=imfilter(G3,w);%//
     
 %     bw1=edge(fdoub1);
 %     [x1,y1]=find(bw1==1);
@@ -161,11 +166,11 @@ while true
         if(isempty(Idxx))
              sumG1(i+1)=0;
              sumG2(i+1)=0;
-             %sumG3(i+1)=0;%//
+             sumG3(i+1)=0;%//
         else
              sumG1(i+1)=sum(G1_sp(Idxx));
              sumG2(i+1)=sum(G2_sp(Idxx));
-             %sumG3(i+1)=sum(G3_sp(Idxx));%//
+             sumG3(i+1)=sum(G3_sp(Idxx));%//
         end
     end
 %     fdoub1_spT=fdoub1_sp';
@@ -177,23 +182,23 @@ while true
 %     U3new=reshape(fdoub3_spT,1,41895);
     sumG(1,:)=sumG1(:);  
     sumG(2,:)=sumG2(:); 
-    %sumG(3,:)=sumG3(:);%//
+    sumG(3,:)=sumG3(:);%//
 %     sumG=sumG;
 %    U=1./((Dist.^M+sumG).*(ones(C,1)*sum((Dist.^2+sumG).^(-1))));%//
 
 
     
-    U=((Dist.^2+sumG).*(ones(C,1)*sum((Z.^M.*Dist.^2+sumG).^(-1)))).^(-1./(M-1));
+    U=((Z.^M.*Dist.^2+sumG).*(ones(C,1)*sum((Z.^M.*Dist.^2+sumG).^(-1)))).^(-1./(M-1));
     
  
     % 目标函数值: 类内加权平方误差和
     if nargout>4 | plotflag
-       Obj_Fcn(iter)=sum(sum(Um.*(Dist.^2).*HDatanew))+sum(sumG(:)) + 4.5*M;
+       Obj_Fcn(iter)=sum(sum(Um.*(Dist.^2).*HDatanew))+sum(sumG(:)) + 3*M;
     end
     fprintf('FCM:Iteration count = %d, obj. fcn = %f, expo=%f\n', iter, Obj_Fcn(iter),M); 
     
     P=sum(Um.*HDatanew.*KKN,2)./sum(Um.*HDatanew,2);
-    M = sum(sum(log(-4.5./(log(U.*Z).*Dist.^2))))./sum(sum(log(U.*Z)));
+    M = sum(sum(log(-3./(log(U.*Z).*Dist.^2))))./sum(sum(log(U.*Z)));
     if isnan(M)
         M = 2;
     end
