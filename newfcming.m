@@ -1,7 +1,7 @@
 clear;close all;clc;
 f=imread('FLIR0359.jpg');
 f=rgb2gray(f);
-f=imnoise(f,'gaussian',0.1,0.004);%对图像加入高斯噪声
+f=imnoise(f,'gaussian',0.02,0.004);%对图像加入高斯噪声
 figure,imshow(f);
 ft=f';
 [M,N]=size(f);
@@ -10,10 +10,10 @@ Data=ft(:);
 
 tic;
 %FCM聚类
-% [U,P,Dist,Cluster_Res,Obj_Fcn,iter]=fuzzycm(Data,3,0,2,1.0e-4);
+% [U,`P,Dist,Cluster_Res,Obj_Fcn,iter]=fuzzycm(Data,3,0,2,1.0e-4);
 % [U,P,Dist,Cluster_Res,Obj_Fcn,iter]=imhistfuzzycm(Data,3,0,2,1.0e-4);
 [U,P,Dist,Obj_Fcn,iter]=GGspconimhistfuzzycm(f,Data,2,0,2,1.0e-4);%//
-toc;
+
 
 %给它标签
 UL=zeros(1,size(U,2));
@@ -45,6 +45,7 @@ ImG=fnew;
 [afaImS,afaSL]=ulsound_2cls_aMFCM(ImG,fU);
 
 figure,imshow(afaImS,[]);
+toc;
 
 
 

@@ -56,9 +56,6 @@ U0 = rand(C,NN);
 % FCM 的迭代算法
 KK=0:255;
 KKN=KK(ones(C,1),:);
-
-P = [0.3;0.7];
-
 while true
     
      %初始目标中心
@@ -91,17 +88,15 @@ while true
     Z(1,:) = Z1_1(:);
     Z(2,:) = Z2_1(:);
     
-    Z(find(isnan(Z)==1)) = 1;
-    Z(Z==inf)=1;
-    Z(1,:) = Z(1,:)./max(Z);
-    Z(2,:) = Z(2,:)./max(Z);
-    
+    Z(find(isnan(Z)==1)) = 0;
+    Z(Z==inf)=0;
+    Z = mapminmax(Z', 0, 1)';
     
     % 迭代计数器
     iter=iter+1;
     % 计算或更新聚类中心 P
     Um=(U0.*Z).^M;
-%     P=sum(Um.*HDatanew.*KKN,2)./sum(Um.*HDatanew,2);
+    P=sum(Um.*HDatanew.*KKN,2)./sum(Um.*HDatanew,2);
     
    
     % 更新划分矩阵 U
@@ -184,21 +179,18 @@ while true
 
     
     U=((Dist.^2+sumG).*(ones(C,1)*sum((Z.^M.*Dist.^2+sumG).^(-1)))).^(-1./(M-1));
-    
- 
     % 目标函数值: 类内加权平方误差和
     if nargout>4 | plotflag
-       Obj_Fcn(iter)=sum(sum(Um.*(Dist.^2).*HDatanew))+sum(sumG(:)) + 4.5*M;
+       Obj_Fcn(iter)=sum(sum(Um.*(Dist.^2).*HDatanew))+sum(sumG(:)) + M;
     end
     fprintf('FCM:Iteration count = %d, obj. fcn = %f, expo=%f\n', iter, Obj_Fcn(iter),M); 
     
-    P=sum(Um.*HDatanew.*KKN,2)./sum(Um.*HDatanew,2);
-    M = sum(sum(log(-4.5./(log(U.*Z).*Dist.^2))))./sum(sum(log(U.*Z)));
+    M = sum(sum(log(-1./(log(U.*Z).*Dist.^2))))./sum(sum(log(U.*Z)));
     if isnan(M)
         M = 2;
     end
     % FCM 算法迭代停止条件
-    if (norm(U-U0,Inf))<epsm||(iter==50)
+    if (norm(U-U0,Inf))<epsm||(iter==30)
         break
     end
     U0=U;
